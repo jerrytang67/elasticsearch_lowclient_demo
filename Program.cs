@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,34 +14,38 @@ namespace elasticsearch_NEST_demo
         {
             Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
-            var settings = new ConnectionConfiguration(new Uri("http://localhost:9201"))
+            var settings = new ConnectionConfiguration(new Uri("http://127.0.0.1:9201"))
                 .RequestTimeout(TimeSpan.FromMinutes(2));
 
             var lowlevelClient = new ElasticLowLevelClient(settings);
 
-             // await Expert(lowlevelClient, "CSP-S江苏.xlsx", "江苏省");
-             // await Expert(lowlevelClient, "CSP-J江苏.xlsx", "江苏省");
-             // await Expert(lowlevelClient, "CSP-J上海.xlsx", "上海市");
-             // await Expert(lowlevelClient, "CSP-S上海.xlsx", "上海市");
-             // await Expert(lowlevelClient, "CSP-J安徽.xlsx", "安徽省");
-             // await Expert(lowlevelClient, "CSP-S安徽.xlsx", "安徽省");
-             // await Expert(lowlevelClient, "CSP-J浙江.xlsx", "浙江省");
-             // await Expert(lowlevelClient, "CSP-S浙江.xlsx", "浙江省");
-             await Expert(lowlevelClient, "CSP-S广东.xlsx", "广东省");
+            // await Expert(lowlevelClient, "CSP-S江苏.xlsx", "江苏省");
+            // await Expert(lowlevelClient, "CSP-J江苏.xlsx", "江苏省");
+            // await Expert(lowlevelClient, "CSP-J上海.xlsx", "上海市");
+            // await Expert(lowlevelClient, "CSP-S上海.xlsx", "上海市");
+            // await Expert(lowlevelClient, "CSP-J安徽.xlsx", "安徽省");
+            // await Expert(lowlevelClient, "CSP-S安徽.xlsx", "安徽省");
+            // await Expert(lowlevelClient, "CSP-J浙江.xlsx", "浙江省");
+            // await Expert(lowlevelClient, "CSP-S浙江.xlsx", "浙江省");
+            // await Expert(lowlevelClient, "CSP-S广东.xlsx", "广东省");
 
-            Console.WriteLine("Hello World!");
+            // Console.WriteLine("Hello World!");
         }
 
         public static async Task Expert(ElasticLowLevelClient lowlevelClient, string fileName, string province)
         {
             var file = new FileInfo(fileName);
+            ExcelPackage.LicenseContext = LicenseContext.Commercial;
             using (var package = new ExcelPackage(file))
             {
-                var worksheet = package.Workbook.Worksheets[1]; // Tip: To access the first worksheet, try index 1, not 0
+                var worksheet = package.Workbook.Worksheets[0];
                 var rowCount = worksheet.Dimension.Rows;
                 var colCount = worksheet.Dimension.Columns;
                 int cout = 0;
-                
+
+
+                List<object> list = new();
+
                 for (int row = 2; row <= rowCount; row++)
                 {
                     var model = new Person();
@@ -78,11 +83,15 @@ namespace elasticsearch_NEST_demo
                     }
 
                     model.Province = province;
+                    // await lowlevelClient.IndexAsync<BytesResponse>("csp", PostData.Serializable(model));
 
-                    await lowlevelClient.IndexAsync<BytesResponse>("csp", PostData.Serializable(model));
+                    list.Add(new {index = new {_index = "csp", _type = "person", _id = Guid.NewGuid()}});
+                    list.Add(model);
                     cout++;
                 }
-                Console.WriteLine($"处理了{province} {cout}条记录");
+                
+                dynamic result = await lowlevelClient.BulkAsync<StringResponse>(PostData.MultiJson(list));
+                Console.WriteLine($"处理了{province} {cout}条记录\n {result}");
             }
         }
     }
