@@ -29,7 +29,7 @@ namespace elasticsearch_NEST_demo
             // await Expert(lowlevelClient, "CSP-S浙江.xlsx", "浙江省");
             // await Expert(lowlevelClient, "CSP-S广东.xlsx", "广东省");
 
-            // Console.WriteLine("Hello World!");
+            Console.WriteLine("Hello World!");
         }
 
         public static async Task Expert(ElasticLowLevelClient lowlevelClient, string fileName, string province)
